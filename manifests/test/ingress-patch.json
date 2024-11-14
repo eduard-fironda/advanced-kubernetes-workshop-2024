@@ -1,0 +1,15 @@
+[
+  {
+    "op": "replace",
+    "path": "/spec/rules/0/host",
+    "value": "test.65.108.90.252.nip.io"
+  },
+  {
+    "op": "remove",
+    "path": "/metadata/annotations"
+  },
+  {
+    "op": "remove",
+    "path": "/spec/tls"
+  }
+]
