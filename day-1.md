@@ -113,7 +113,7 @@ We'll [install](https://docs.tigera.io/calico/latest/getting-started/kubernetes/
 
 ```sh
 # download the manifest locally:
-curl -Lo calico.yaml curl https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/calico.yaml -O
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/calico.yaml -O
 # take a minute to go over it and then apply it:
 less calico.yaml
 kubectl apply -f calico.yaml
