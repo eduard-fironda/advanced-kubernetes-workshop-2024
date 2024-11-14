@@ -15,7 +15,7 @@ SSH into the control plane server as your user:
 ```sh
 ssh $USERNAME@$CP_IP -p 33133
 # e.g.
-ssh lbogdan@65.108.90.252 -p 33133
+ssh lbogdan@65.108.246.26 -p 33133
 ```
 
 > **Note**
@@ -26,7 +26,7 @@ You can also define aliases for the control plane and worker nodes by adding the
 
 ```
 Host lbogdan-cp-0
-  HostName 65.108.90.252
+  HostName 65.108.246.26
   User lbogdan
   Port 33133
 Host lbogdan-node-0
@@ -74,7 +74,7 @@ sudo kubeadm init --config /etc/kubernetes/kubeadm/config.yaml | tee kubeadm-ini
 # [...]
 # Then you can join any number of worker nodes by running the following on each as root:
 #
-# kubeadm join 65.108.90.252:6443 --token [redacted] \
+# kubeadm join 65.108.246.26:6443 --token [redacted] \
 #         --discovery-token-ca-cert-hash sha256:b8f9baeae37cba30d81da8639a60c12e1bddcea43579ff4b3de3becc469f91b8
 ls
 # kubeadm-init.log
@@ -193,7 +193,7 @@ kubectl get services -o wide
 # test         NodePort    10.103.209.237   <none>        80:32052/TCP   48m   app=test
 ```
 
-You should now be able to open `http://$CP_IP:$SERVICE_NODEPORT/` (e.g. `http://65.108.90.252:32052/`) from your browser.
+You should now be able to open `http://$CP_IP:$SERVICE_NODEPORT/` (e.g. `http://65.108.246.26:32052/`) from your browser.
 
 Finally, let's clean up and restore the control plane taint:
 
@@ -213,7 +213,7 @@ Add the worker node.
 SSH into the worker node and run the `kubeadm join` command from `kubeadm init`'s output, prefixed by `sudo`:
 
 ```sh
-sudo kubeadm join 65.108.90.252:6443 --token [redacted] \
+sudo kubeadm join 65.108.246.26:6443 --token [redacted] \
         --discovery-token-ca-cert-hash sha256:b8f9baeae37cba30d81da8639a60c12e1bddcea43579ff4b3de3becc469f91b8
 # [preflight] Running pre-flight checks
 # [preflight] Reading configuration from the cluster...
@@ -236,7 +236,7 @@ Back on the control plane node, you should see the new node with `Ready` status;
 # on the control plane:
 kubectl get no -o wide
 # NAME             STATUS   ROLES           AGE    VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION         CONTAINER-RUNTIME
-# lbogdan-cp-0     Ready    control-plane   112m   v1.27.6   65.108.90.252       <none>        Ubuntu 22.04.3 LTS   6.5.3-060503-generic   cri-o://1.27.1
+# lbogdan-cp-0     Ready    control-plane   112m   v1.27.6   65.108.246.26       <none>        Ubuntu 22.04.3 LTS   6.5.3-060503-generic   cri-o://1.27.1
 # lbogdan-node-0   Ready    <none>          4m1s   v1.27.6   95.217.186.230   <none>        Ubuntu 22.04.3 LTS   6.5.3-060503-generic   cri-o://1.27.1
 ```
 
@@ -388,7 +388,7 @@ First, install the app, defined as a [`Kustomize` overlay](https://kubernetes.io
 ```sh
 # clone the repository locally
 cd $REPO_PATH/manifests/test
-# edit ingress-patch.json and replace $HOST with test.$CP_IP.nip.io, e.g. test.65.108.90.252.nip.io
+# edit ingress-patch.json and replace $HOST with test.$CP_IP.nip.io, e.g. test.65.108.246.26.nip.io
 # check the manifests:
 kubectl kustomize . | less
 # and apply them:
@@ -404,14 +404,14 @@ kubectl describe ing test
 # Rules:
 #   Host                    Path  Backends
 #   ----                    ----  --------
-#   test.65.108.90.252.nip.io  
+#   test.65.108.246.26.nip.io  
 #                           /   test:http (192.168.238.9:8080)
 # Annotations:              <none>
 # Events:                   <none>
 #
 # try to access it:
-curl http://test.65.108.90.252.nip.io/
-# curl: (7) Failed to connect to test.65.108.90.252.nip.io port 80 after 250 ms: Couldn't connect to server
+curl http://test.65.108.246.26.nip.io/
+# curl: (7) Failed to connect to test.65.108.246.26.nip.io port 80 after 250 ms: Couldn't connect to server
 ```
 
 That's expected, as we don't have any ingress controller running in the cluster yet.
@@ -431,13 +431,13 @@ kubectl describe ing test
 # Name:             test
 # Labels:           app=test
 # Namespace:        default
-# Address:          65.108.90.252
+# Address:          65.108.246.26
 # Ingress Class:    nginx
 # Default backend:  <default>
 # Rules:
 #   Host                    Path  Backends
 #   ----                    ----  --------
-#   test.65.108.90.252.nip.io  
+#   test.65.108.246.26.nip.io  
 #                           /   test:http (192.168.238.9:8080)
 # Annotations:              <none>
 # Events:
@@ -446,22 +446,20 @@ kubectl describe ing test
 #   Normal  Sync    38s (x2 over 38s)  nginx-ingress-controller  Scheduled for sync
 #
 # and we should be able to access it (also from a browser):
-curl http://test.65.108.90.252.nip.io/
+curl http://test.65.108.246.26.nip.io/
 # <!doctype html>
 # [...]
 ```
 
 Let's now enable TLS for our ingress; in the `manifests/test` folder do the following:
 
-- edit `base/ingress.yaml` and uncomment all commented lines;
-
 - edit `ingress-patch-tls.json` and replace all `$HOST` occurrences with `test.$CP_IP.nip.io`;
 
-- edit `kustomization` and replace `path: ingress-patch.json` with `path: ingress-patch-tls.json`;
+- edit `kustomization.yaml` and replace `path: ingress-patch.json` with `path: ingress-patch-tls.json`;
 
 - check (`kubectl diff -k .`) and apply (`kubectl apply -k .`).
 
-If we now refresh the browser, we'll get redirected to the `https://` URL, but we'll get a `NET::ERR_CERT_AUTHORITY_INVALID` (or similar) error. That's because the `test.65.108.90.252.nip.io-tls` secret doesn't exit, so our ingress controller uses uses its default, self-signed certificate.
+If we now refresh the browser, we'll get redirected to the `https://` URL, but we'll get a `NET::ERR_CERT_AUTHORITY_INVALID` (or similar) error. That's because the `test.65.108.246.26.nip.io-tls` secret doesn't exit, so our ingress controller uses uses its default, self-signed certificate.
 
 In order to fix this, let's next install [`cert-manager`](https://cert-manager.io/), which will auto-generate (and renew) valid certificates using [Let's Encrypt](https://letsencrypt.org/).
 
@@ -478,14 +476,14 @@ To force the certificate regeneration, we can delete the certificate:
 ```sh
 kubectl get cert
 # NAME                         READY   SECRET                       AGE
-# test.65.108.90.252.nip.io-tls   False   test.65.108.90.252.nip.io-tls   7m47s
-kubectl delete cert test.65.108.90.252.nip.io-tls
-# certificate.cert-manager.io "test.65.108.90.252.nip.io-tls" deleted
+# test.65.108.246.26.nip.io-tls   False   test.65.108.246.26.nip.io-tls   7m47s
+kubectl delete cert test.65.108.246.26.nip.io-tls
+# certificate.cert-manager.io "test.65.108.246.26.nip.io-tls" deleted
 #
 # wait for the certificate to become ready:
 kubectl get cert
 # NAME                         READY   SECRET                       AGE
-# test.65.108.90.252.nip.io-tls   True    test.65.108.90.252.nip.io-tls   32s
+# test.65.108.246.26.nip.io-tls   True    test.65.108.246.26.nip.io-tls   32s
 ```
 
 Now you if we refresh, we should be able to access the application over HTTPS.
@@ -546,7 +544,7 @@ kubectl get storageclasses
 # ceph-block (default)   rook-ceph.rbd.csi.ceph.com   Retain          Immediate           true                   5m46s
 ```
 
-To test it, uncomment the PVC resource in `manifests/test/kustomization.yaml` and the volume and mount in `manifests/test/base/deployment.yaml`. Reapply the `test` app and check that the PVC is bound and the pod starts successfully with the volume mounted:
+To test it, comment the `no-volume.json` and `delete-pvc.json` patches in `kustomization.yaml`. Reapply the `test` app and check that the PVC is bound and the pod starts successfully with the volume mounted:
 
 ```sh
 kubectl get pvc
@@ -561,7 +559,7 @@ kubectl exec deploy/test -- dd if=/dev/random of=/data/random.bin bs=1M count=1
 # 1+0 records out
 ```
 
-Check that you can access the file at `https://test.65.108.90.252.nip.io/fs/data/random.bin`.
+Check that you can access the file at `https://test.65.108.246.26.nip.io/fs/data/random.bin`.
 
 Restart the pod and check that the file is persisted.
 
