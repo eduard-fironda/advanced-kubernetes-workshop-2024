@@ -1,0 +1,32 @@
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 100Mi
+
+prometheus:
+  prometheusSpec:
+    externalLabels:
+      cluster: workshop
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 2Gi
+    retention: 2d
+
+grafana:
+  persistence:
+    type: pvc
+    enabled: true
+    size: 100Mi
+  adminPassword: test123test
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - $HOST
